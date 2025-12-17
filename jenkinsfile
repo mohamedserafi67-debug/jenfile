@@ -2,41 +2,25 @@ pipeline {
     agent any
 
     environment {
-        // Correct way to define variables in declarative pipelines
         DOCKER_HUB_USER = 'm7md1667'
         DOCKER_IMAGE_NAME = 'node-app'
-        DOCKER_CREDS_ID = 'docker-hub-credentials'
-        // Use double quotes to interpolate variables
+        DOCKER_CREDS = credentials('docker-hub-credentials') 
         FULL_IMAGE_TAG = "${DOCKER_HUB_USER}/${DOCKER_IMAGE_NAME}:${BUILD_NUMBER}"
     }
 
     stages {
         stage('Build Docker Image') {
             steps {
-                script {
-                    echo "Building Docker image: ${env.FULL_IMAGE_TAG}" 
-                    // This line requires the 'Docker Pipeline' plugin to be installed
-                    docker.build(env.FULL_IMAGE_TAG, '.')
-                    echo "Image successfully built!"
-                }
+                // Use 'sh' instead of 'docker.build'
+                sh "docker build -t ${FULL_IMAGE_TAG} ."
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                script {
-                    // Using withDockerRegistry handles login/logout automatically
-                    docker.withRegistry('', DOCKER_CREDS_ID) {
-                        def myImage = docker.image(env.FULL_IMAGE_TAG)
-                        myImage.push()
-                    }
-                }
-            }
-        }
-
-        stage('Clean Up') {
-            steps {
-                echo "Pipeline finished. The new image is available at: ${env.FULL_IMAGE_TAG}"
+                sh "echo ${DOCKER_CREDS_PSW} | docker login -u ${DOCKER_CREDS_USR} --password-stdin"
+                sh "docker push ${FULL_IMAGE_TAG}"
+                sh "docker logout"
             }
         }
     }
