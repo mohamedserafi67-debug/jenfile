@@ -1,67 +1,43 @@
-// Jenkinsfile (Declarative Pipeline)
-
 pipeline {
     agent any
 
-    // -----------------------------------------------------------------
-    // FIX: Variables are moved into the 'environment' block
-    // -----------------------------------------------------------------
     environment {
-        // You define simple string variables directly here
+        // Correct way to define variables in declarative pipelines
         DOCKER_HUB_USER = 'm7md1667'
-        DOCKER_CREDS_ID = ''
-        credentialsId = 'docker-hub-credentials'
-        // You can define variables that use Groovy/expression syntax using the 'script' block 
-        // OR by using the $ notation for environment variables defined above
-       // IMAGE_TAG = "${env.DOCKER_HUB_USER}/my-jenkins:${env.BUILD_NUMBER}"
-        def DOCKER_IMAGE_NAME = "node-app" // <-- USE THE CLEAN NAME HERE!
-        def FULL_IMAGE_TAG = "${env.DOCKER_HUB_USER}/${env.DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
-       
+        DOCKER_IMAGE_NAME = 'node-app'
+        DOCKER_CREDS_ID = 'docker-hub-credentials'
+        // Use double quotes to interpolate variables
+        FULL_IMAGE_TAG = "${DOCKER_HUB_USER}/${DOCKER_IMAGE_NAME}:${BUILD_NUMBER}"
     }
-    // -----------------------------------------------------------------
 
-   stages {
-        /*
-        // REMOVED: Since you don't have a Git repo, this stage is no longer needed.
-        stage('Clone Code') {
-            steps {
-                echo 'Skipping code checkout as there is no SCM...'
-            }
-        }
-        */
-
+    stages {
         stage('Build Docker Image') {
             steps {
                 script {
                     echo "Building Docker image: ${env.FULL_IMAGE_TAG}" 
-                    // This is where the 'docker' variable is called:
-                    def customImage = docker.build(env.FULL_IMAGE_TAG, '.')
+                    // This line requires the 'Docker Pipeline' plugin to be installed
+                    docker.build(env.FULL_IMAGE_TAG, '.')
                     echo "Image successfully built!"
                 }
             }
         }
 
-     stage('Push Docker Image') {
-         steps {
-    script {
-        // Use the full Username/Password credential (or the R/W/D PAT)
-        withDockerRegistry(credentialsId: 'docker-hub-credentials', url: '') {
-                def myImage = docker.build("${env.FULL_IMAGE_TAG}")
-                    myImage.push()
-                
-                // STEP 3: Logout
-                sh "docker logout https://registry.hub.docker.com"
-            }
-        }
-    }
-     }
-        stage('Clean Up') {
+        stage('Push Docker Image') {
             steps {
-                echo "Pipeline finished. The new image is available at: ${env.IMAGE_TAG}"
+                script {
+                    // Using withDockerRegistry handles login/logout automatically
+                    docker.withRegistry('', DOCKER_CREDS_ID) {
+                        def myImage = docker.image(env.FULL_IMAGE_TAG)
+                        myImage.push()
+                    }
+                }
             }
         }
 
-   }
-      
+        stage('Clean Up') {
+            steps {
+                echo "Pipeline finished. The new image is available at: ${env.FULL_IMAGE_TAG}"
+            }
+        }
+    }
 }
-   
