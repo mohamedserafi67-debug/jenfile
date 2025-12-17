@@ -14,7 +14,7 @@ pipeline {
         // You can define variables that use Groovy/expression syntax using the 'script' block 
         // OR by using the $ notation for environment variables defined above
        // IMAGE_TAG = "${env.DOCKER_HUB_USER}/my-jenkins:${env.BUILD_NUMBER}"
-        def DOCKER_IMAGE_NAME = "my-jenkins-1" // <-- USE THE CLEAN NAME HERE!
+        def DOCKER_IMAGE_NAME = "node-app" // <-- USE THE CLEAN NAME HERE!
         def FULL_IMAGE_TAG = "${env.DOCKER_HUB_USER}/${env.DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
        
     }
