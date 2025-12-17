@@ -9,6 +9,12 @@ pipeline {
     }
 
     stages {
+
+        stage('Checkout SCM') {
+              steps {
+                       git branch: "main", credentialsId: 'gittoken', url:'https://github.com/mohamedserafi67-debug/jenfile'
+              }
+       }
         stage('Build Docker Image') {
             steps {
                 // Use 'sh' instead of 'docker.build'
